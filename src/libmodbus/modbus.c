@@ -750,6 +750,31 @@ static int response_exception(modbus_t *ctx, sft_t *sft,
     return rsp_length;
 }
 
+int modbus_set_event_callback(modbus_t *ctx, modbus_event_cb_t event_cb)
+{
+    if (ctx == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    ctx->callbacks.event_cb = event_cb;
+
+    return 0;
+}
+
+int modbus_set_callbacks(modbus_t *ctx, callback_mapping_t *callbacks)
+{
+    if (ctx == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    ctx->callbacks = *callbacks;
+
+    return 0;
+}
+
+
 /* Send a response to the received request.
    Analyses the request and constructs a response.
 
@@ -781,6 +806,11 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
     sft.function = function;
     sft.t_id = ctx->backend->prepare_response_tid(req, &req_length);
 
+    if (ctx->callbacks.event_cb != NULL) {
+        ctx->callbacks.event_cb(slave, function, address);
+        //ctx->event_cb(ctx, req, req_length, offset, slave, function, address);
+    }
+
     /* Data are flushed on illegal number of values errors. */
     switch (function) {
     case MODBUS_FC_READ_COILS:
@@ -808,9 +838,15 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
                 mapping_address < 0 ? address : address + nb, name);
         } else {
             rsp_length = ctx->backend->build_response_basis(&sft, rsp);
-            rsp[rsp_length++] = (nb / 8) + ((nb % 8) ? 1 : 0);
-            rsp_length = response_io_status(tab_bits, mapping_address, nb,
-                                            rsp, rsp_length);
+
+            if (function == MODBUS_FC_READ_COILS && ctx->callbacks.read_coils_cb != NULL) {
+                int rv = ctx->callbacks.read_coils_cb(&rsp, rsp_length, address, nb);
+                rsp_length += rv;
+            } else {
+                rsp[rsp_length++] = (nb / 8) + ((nb % 8) ? 1 : 0);
+                rsp_length = response_io_status(tab_bits, mapping_address, nb,
+                                                rsp, rsp_length);
+            }
         }
     }
         break;
@@ -864,7 +900,13 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
 #else
             if (data == 0xFF00 || data == 0x0) {
 #endif
-                mb_mapping->tab_bits[mapping_address] = data ? 1 : 0;
+
+                mb_mapping->tab_bits[mapping_address] = data ? 1 : 0; // TODO do we save this?
+
+                if (ctx->callbacks.write_single_coil_cb != NULL) {
+                    ctx->callbacks.write_single_coil_cb(address, data);
+                }
+
                 memcpy(rsp, req, req_length);
                 rsp_length = req_length;
             } else {

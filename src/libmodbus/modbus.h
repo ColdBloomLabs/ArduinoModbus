@@ -152,6 +152,16 @@ extern const unsigned int libmodbus_version_micro;
 
 typedef struct _modbus modbus_t;
 
+typedef void (*modbus_event_cb_t) (int device_addr, int function, int address);
+typedef void (*modbus_write_single_coil_cb_t) (int addr, uint16_t value);
+typedef int (*modbus_read_coils_cb_t) (uint8_t *rsp, int16_t rsp_length, uint16_t addr, uint16_t nb);
+
+typedef struct {
+    modbus_event_cb_t event_cb;
+    modbus_write_single_coil_cb_t write_single_coil_cb;
+    modbus_read_coils_cb_t read_coils_cb;
+} callback_mapping_t;
+
 typedef struct {
     int nb_bits;
     int start_bits;
@@ -178,6 +188,9 @@ MODBUS_API int modbus_set_slave(modbus_t* ctx, int slave);
 MODBUS_API int modbus_set_error_recovery(modbus_t *ctx, modbus_error_recovery_mode error_recovery);
 MODBUS_API int modbus_set_socket(modbus_t *ctx, int s);
 MODBUS_API int modbus_get_socket(modbus_t *ctx);
+
+MODBUS_API int modbus_set_event_callback(modbus_t* ctx, modbus_event_cb_t cb);
+MODBUS_API int modbus_set_callbacks(modbus_t* ctx, callback_mapping_t* callbacks);
 
 MODBUS_API int modbus_get_response_timeout(modbus_t *ctx, uint32_t *to_sec, uint32_t *to_usec);
 MODBUS_API int modbus_set_response_timeout(modbus_t *ctx, uint32_t to_sec, uint32_t to_usec);

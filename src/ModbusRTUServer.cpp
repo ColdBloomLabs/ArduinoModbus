@@ -48,6 +48,8 @@ int ModbusRTUServerClass::begin(int id, unsigned long baudrate, uint16_t config)
 
   modbus_connect(mb);
 
+  modbus_set_debug(mb, 1);
+
   return 1;
 }
 

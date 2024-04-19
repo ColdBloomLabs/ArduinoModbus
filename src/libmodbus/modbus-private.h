@@ -114,6 +114,7 @@ struct _modbus {
     struct timeval byte_timeout;
     const modbus_backend_t *backend;
     void *backend_data;
+    callback_mapping_t callbacks;
 };
 
 void _modbus_init_common(modbus_t *ctx);

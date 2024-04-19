@@ -300,6 +300,28 @@ int ModbusServer::begin(modbus_t* mb, int id)
   return 1;
 }
 
+int ModbusServer::setEventCallback(modbus_event_cb_t callback)
+{
+    if (_mb == NULL) {
+        return 0;
+    }
+
+    modbus_set_event_callback(_mb, callback);
+
+    return 1;
+}
+
+int ModbusServer::setCallbacks(callback_mapping_t* callbacks)
+{
+  if (_mb == NULL) {
+    return 0;
+  }
+
+  modbus_set_callbacks(_mb, callbacks);
+
+  return 1;
+}
+
 void ModbusServer::end()
 {
   if (_mbMapping.tab_bits != NULL) {

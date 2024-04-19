@@ -136,6 +136,9 @@ public:
    */
   void end();
 
+  int setCallbacks(callback_mapping_t* callbacks);
+  int setEventCallback(modbus_event_cb_t callback);
+
 protected:
   ModbusServer();
   virtual ~ModbusServer();
