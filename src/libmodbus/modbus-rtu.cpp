@@ -1362,6 +1362,7 @@ modbus_t* modbus_new_rtu(const char *device,
     ctx->backend_data = (modbus_rtu_t *)malloc(sizeof(modbus_rtu_t));
     ctx_rtu = (modbus_rtu_t *)ctx->backend_data;
     ctx->callbacks.event_cb = NULL;
+    ctx->callbacks.happened_cb = NULL;
     ctx->callbacks.write_single_coil_cb = NULL;
     ctx->callbacks.read_coils_cb = NULL;
 

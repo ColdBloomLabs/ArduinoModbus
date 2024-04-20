@@ -808,7 +808,6 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
 
     if (ctx->callbacks.event_cb != NULL) {
         ctx->callbacks.event_cb(slave, function, address);
-        //ctx->event_cb(ctx, req, req_length, offset, slave, function, address);
     }
 
     /* Data are flushed on illegal number of values errors. */
@@ -847,6 +846,10 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
                 rsp_length = response_io_status(tab_bits, mapping_address, nb,
                                                 rsp, rsp_length);
             }
+
+            if (ctx->callbacks.happened_cb != NULL) {
+                ctx->callbacks.happened_cb(slave, function, address, nb);
+            }
         }
     }
         break;
@@ -881,6 +884,10 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
                 rsp[rsp_length++] = tab_registers[i] >> 8;
                 rsp[rsp_length++] = tab_registers[i] & 0xFF;
             }
+
+            if (ctx->callbacks.happened_cb != NULL) {
+                ctx->callbacks.happened_cb(slave, function, address, nb);
+            }
         }
     }
         break;
@@ -909,6 +916,10 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
 
                 memcpy(rsp, req, req_length);
                 rsp_length = req_length;
+
+                if (ctx->callbacks.happened_cb != NULL) {
+                    ctx->callbacks.happened_cb(slave, function, address, data);
+                }
             } else {
                 rsp_length = response_exception(
                     ctx, &sft,
@@ -934,6 +945,10 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
             mb_mapping->tab_registers[mapping_address] = data;
             memcpy(rsp, req, req_length);
             rsp_length = req_length;
+
+            if (ctx->callbacks.happened_cb != NULL) {
+                ctx->callbacks.happened_cb(slave, function, address, data);
+            }
         }
     }
         break;
@@ -1085,6 +1100,10 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
             for (i = mapping_address; i < mapping_address + nb; i++) {
                 rsp[rsp_length++] = mb_mapping->tab_registers[i] >> 8;
                 rsp[rsp_length++] = mb_mapping->tab_registers[i] & 0xFF;
+            }
+
+            if (ctx->callbacks.happened_cb != NULL) {
+                ctx->callbacks.happened_cb(slave, function, address, nb);
             }
         }
     }

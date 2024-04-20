@@ -956,6 +956,8 @@ modbus_t* modbus_new_tcp(const char *ip, int port)
     /* Could be changed after to reach a remote serial Modbus device */
     ctx->slave = MODBUS_TCP_SLAVE;
     ctx->callbacks.event_cb = NULL;
+    ctx->callbacks.happened_cb = NULL;
+    ctx->callbacks.write_single_coil_cb = NULL;
     ctx->callbacks.read_coils_cb = NULL;
 
     ctx->backend = &_modbus_tcp_backend;
@@ -1008,6 +1010,7 @@ modbus_t* modbus_new_tcp_pi(const char *node, const char *service)
     /* Could be changed after to reach a remote serial Modbus device */
     ctx->slave = MODBUS_TCP_SLAVE;
     ctx->callbacks.event_cb = NULL;
+    ctx->callbacks.happened_cb = NULL;
     ctx->callbacks.write_single_coil_cb = NULL;
     ctx->callbacks.read_coils_cb = NULL;
 
