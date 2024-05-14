@@ -69,8 +69,9 @@ public:
    */
   long holdingRegisterRead(int address);
   long holdingRegisterRead(int id, int address);
+  int holdingRegisterRead(uint16_t *data, int id, int address, uint8_t nb);
 
-  /**
+    /**
    * Perform a "Read Input Registers" operation for a single input
    * register.
    *
@@ -202,6 +203,7 @@ public:
    * Set response timeout (in milliseconds)
    */
   void setTimeout(unsigned long ms);
+  void setByteTimeout(unsigned long byteTimeoutMs);
 
 protected:
   ModbusClient(unsigned long defaultTimeout);

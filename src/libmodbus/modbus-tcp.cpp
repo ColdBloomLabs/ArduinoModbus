@@ -959,6 +959,8 @@ modbus_t* modbus_new_tcp(const char *ip, int port)
     ctx->callbacks.happened_cb = NULL;
     ctx->callbacks.write_single_coil_cb = NULL;
     ctx->callbacks.read_coils_cb = NULL;
+    ctx->callbacks.read_holding_registers_cb = NULL;
+    ctx->callbacks.write_single_register_cb = NULL;
 
     ctx->backend = &_modbus_tcp_backend;
 
@@ -1013,6 +1015,8 @@ modbus_t* modbus_new_tcp_pi(const char *node, const char *service)
     ctx->callbacks.happened_cb = NULL;
     ctx->callbacks.write_single_coil_cb = NULL;
     ctx->callbacks.read_coils_cb = NULL;
+    ctx->callbacks.read_holding_registers_cb = NULL;
+    ctx->callbacks.write_single_register_cb = NULL;
 
     ctx->backend = &_modbus_tcp_pi_backend;
 

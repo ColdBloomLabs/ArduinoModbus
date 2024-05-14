@@ -50,6 +50,20 @@ ModbusServer::~ModbusServer()
   }
 }
 
+void ModbusServer::setTimeout(unsigned long responseTimeoutMs) {
+    if (_mb) {
+        modbus_set_response_timeout(_mb, responseTimeoutMs / 1000, (responseTimeoutMs % 1000) * 1000);
+    }
+}
+
+void ModbusServer::setByteTimeout(unsigned long byteTimeoutMs) {
+    if (_mb) {
+        modbus_set_byte_timeout(_mb, byteTimeoutMs / 1000, (byteTimeoutMs % 1000) * 1000);
+    }
+
+}
+
+
 int ModbusServer::configureCoils(int startAddress, int nb)
 {
   if (startAddress < 0 || nb < 1) {
@@ -286,6 +300,20 @@ int ModbusServer::writeInputRegisters(int address, uint16_t values[], int nb)
   return 1;
 }
 
+int ModbusServer::setId(int id)
+{
+  if (_mb == NULL) {
+    return 0;
+  }
+
+  if (id >= 1) { // just a but!
+      modbus_set_slave(_mb, id);
+  }
+
+
+  return 1;
+}
+
 int ModbusServer::begin(modbus_t* mb, int id)
 {
   end();
@@ -348,4 +376,13 @@ void ModbusServer::end()
 
     _mb = NULL;
   }
+}
+
+int ModbusServer::getId()
+{
+  if (_mb == NULL) {
+    return -1;
+  }
+
+  return modbus_get_slave(_mb);
 }

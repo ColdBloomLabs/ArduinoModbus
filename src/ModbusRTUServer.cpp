@@ -50,6 +50,12 @@ int ModbusRTUServerClass::begin(int id, unsigned long baudrate, uint16_t config)
 
   modbus_set_debug(mb, 1);
 
+//  Serial.println("Setting response timeout to 20ms");
+//
+//  int timeout = 20; // ms
+//
+//  modbus_set_response_timeout(mb, timeout / 1000, (timeout % 1000) * 1000);
+
   return 1;
 }
 
@@ -71,5 +77,6 @@ int ModbusRTUServerClass::poll()
   }
   return 0;
 }
+
 
 ModbusRTUServerClass ModbusRTUServer;

@@ -143,6 +143,8 @@ static int _modbus_set_slave(modbus_t *ctx, int slave)
     return 0;
 }
 
+
+
 /* Builds a RTU request header */
 static int _modbus_rtu_build_request_basis(modbus_t *ctx, int function,
                                            int addr, int nb,
@@ -389,6 +391,8 @@ static int _modbus_rtu_receive(modbus_t *ctx, uint8_t *req)
     return rc;
 }
 
+
+
 static ssize_t _modbus_rtu_recv(modbus_t *ctx, uint8_t *rsp, int rsp_length)
 {
 #if defined(_WIN32)
@@ -396,7 +400,45 @@ static ssize_t _modbus_rtu_recv(modbus_t *ctx, uint8_t *rsp, int rsp_length)
 #elif defined(ARDUINO)
     modbus_rtu_t *ctx_rtu = (modbus_rtu_t*)ctx->backend_data;
 
-    return ctx_rtu->rs485->readBytes(rsp, rsp_length);
+    int avail =  ctx_rtu->rs485->available();
+    if (ctx_rtu->num_in_recv_buffer < avail) {
+        ctx_rtu->num_in_recv_buffer = avail;
+        ctx_rtu->last_char_recv_time = millis();
+    }
+//
+//    if (avail < rsp_length) {
+//        if (avail > 0 && ctx_rtu->last_char_recv_time != 0 && millis() - ctx_rtu->last_char_recv_time > 500) {
+//            for (int i = 0; i < avail; i++) {
+//                ctx_rtu->rs485->read();
+//            }
+//            Serial.println("WARNING: Clearing incoming modbus data");
+//
+//            return 0;
+//        }
+//        Serial.print("a");
+//        Serial.print(avail);
+//        Serial.print("b");
+//        Serial.println(rsp_length);
+//        return 0; // TODO should we read what we can?
+//    } else {
+//        Serial.print("c");
+//        Serial.println(rsp_length);
+//        }
+
+    ctx_rtu->last_char_recv_time = millis();
+
+//    if (avail > rsp_length) {
+//        // replace readBytes
+//    } else {
+//        return 0;
+//    }
+
+//    int bytes_read = 0;
+//    while (bytes_read <= rsp_length && ctx_rtu->rs485->available()) {
+//        rsp[bytes_read++] = ctx_rtu->rs485->read();
+//    }
+//    return bytes_read;
+    return ctx_rtu->rs485->readBytes(rsp, rsp_length); // TODO don't use readbytes?!?!?!?!
 #else
     return read(ctx->s, rsp, rsp_length);
 #endif
@@ -1261,17 +1303,29 @@ static int _modbus_rtu_select(modbus_t *ctx, fd_set *rset,
 
     unsigned long wait_time_millis = (tv == NULL) ? 0 : (tv->tv_sec * 1000) + (tv->tv_usec / 1000);
     unsigned long start = millis();
+//
+//    Serial.print("w");
+//    Serial.print(wait_time_millis);
 
     do {
         s_rc = ctx_rtu->rs485->available();
 
         if (s_rc >= length_to_read) {
             break;
+        } else if (s_rc >= 1) {
+//            Serial.print("w");
+//            Serial.print(length_to_read);
+//            Serial.print("z");
+//            Serial.print(s_rc);
+//            Serial.print("y");
+//            Serial.print(ctx_rtu->rs485->peek());
         }
+
     } while ((millis() - start) < wait_time_millis);
 
     if (s_rc == 0) {
         /* Timeout */
+//        Serial.print("x");
         errno = ETIMEDOUT;
         return -1;
     }
@@ -1291,6 +1345,7 @@ static int _modbus_rtu_select(modbus_t *ctx, fd_set *rset,
 
     if (s_rc == 0) {
         /* Timeout */
+//        Serial.println("x200x");
         errno = ETIMEDOUT;
         return -1;
     }
@@ -1329,6 +1384,11 @@ const modbus_backend_t _modbus_rtu_backend = {
     _modbus_rtu_free
 };
 
+
+void arduinoprint(char c) {
+    Serial.print(c);
+}
+
 #ifdef ARDUINO
 modbus_t* modbus_new_rtu(RS485Class *rs485, unsigned long baud, uint16_t config)
 #else
@@ -1365,6 +1425,9 @@ modbus_t* modbus_new_rtu(const char *device,
     ctx->callbacks.happened_cb = NULL;
     ctx->callbacks.write_single_coil_cb = NULL;
     ctx->callbacks.read_coils_cb = NULL;
+    ctx->callbacks.read_holding_registers_cb = NULL;
+    ctx->callbacks.write_single_register_cb = NULL;
+    ctx->print = arduinoprint;
 
 #ifdef ARDUINO
     ctx_rtu->rs485 = rs485;
@@ -1387,6 +1450,8 @@ modbus_t* modbus_new_rtu(const char *device,
     }
     ctx_rtu->data_bit = data_bit;
     ctx_rtu->stop_bit = stop_bit;
+
+    ctx_rtu->last_char_recv_time = 0;
 
 #if HAVE_DECL_TIOCSRS485
     /* The RS232 mode has been set by default */

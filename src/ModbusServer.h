@@ -139,6 +139,13 @@ public:
   int setCallbacks(callback_mapping_t* callbacks);
   int setEventCallback(modbus_event_cb_t callback);
 
+  int setId(int id);
+  int getId();
+  modbus_t* _mb;
+
+  void setTimeout(unsigned long ms);
+    void setByteTimeout(unsigned long byteTimeoutMs);
+
 protected:
   ModbusServer();
   virtual ~ModbusServer();
@@ -146,7 +153,6 @@ protected:
   int begin(modbus_t* _mb, int id);
 
 protected:
-  modbus_t* _mb;
   modbus_mapping_t _mbMapping;
 };
 

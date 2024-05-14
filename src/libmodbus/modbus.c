@@ -155,6 +155,8 @@ static void _sleep_response_timeout(modbus_t *ctx)
     Sleep((ctx->response_timeout.tv_sec * 1000) +
           (ctx->response_timeout.tv_usec / 1000));
 #elif defined(ARDUINO)
+    ctx->print('x');
+    ctx->print(ctx->response_timeout.tv_sec * 1000);
     delay(ctx->response_timeout.tv_sec * 1000);
     delayMicroseconds(ctx->response_timeout.tv_usec);
 #else
@@ -383,7 +385,6 @@ static int compute_data_length_after_meta(modbus_t *ctx, uint8_t *msg,
     return length;
 }
 
-
 /* Waits a response from a modbus server or a request from a modbus client.
    This function blocks if there is no replies (3 timeouts).
 
@@ -456,7 +457,9 @@ int _modbus_receive_msg(modbus_t *ctx, uint8_t *msg, msg_type_t msg_type)
             return -1;
         }
 
+        // TODO is this where the 500, 1500 ms delay is coming from?
         rc = ctx->backend->recv(ctx, msg + msg_length, length_to_read);
+
         if (rc == 0) {
             errno = ECONNRESET;
             rc = -1;
@@ -810,6 +813,10 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
         ctx->callbacks.event_cb(slave, function, address);
     }
 
+    if (slave != ctx->slave) {
+        return 0;
+    }
+
     /* Data are flushed on illegal number of values errors. */
     switch (function) {
     case MODBUS_FC_READ_COILS:
@@ -879,10 +886,15 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
             int i;
 
             rsp_length = ctx->backend->build_response_basis(&sft, rsp);
-            rsp[rsp_length++] = nb << 1;
-            for (i = mapping_address; i < mapping_address + nb; i++) {
-                rsp[rsp_length++] = tab_registers[i] >> 8;
-                rsp[rsp_length++] = tab_registers[i] & 0xFF;
+            if (function == MODBUS_FC_READ_HOLDING_REGISTERS && ctx->callbacks.read_holding_registers_cb != NULL) {
+                int rv = ctx->callbacks.read_holding_registers_cb(&rsp, rsp_length, address, nb, tab_registers, mapping_address);
+                rsp_length += rv;
+            } else {
+                rsp[rsp_length++] = nb << 1;
+                for (i = mapping_address; i < mapping_address + nb; i++) {
+                    rsp[rsp_length++] = tab_registers[i] >> 8;
+                    rsp[rsp_length++] = tab_registers[i] & 0xFF;
+                }
             }
 
             if (ctx->callbacks.happened_cb != NULL) {
@@ -942,8 +954,13 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
         } else {
             int data = (req[offset + 3] << 8) + req[offset + 4];
 
-            mb_mapping->tab_registers[mapping_address] = data;
-            memcpy(rsp, req, req_length);
+            if (ctx->callbacks.write_single_register_cb != NULL) {
+                ctx->callbacks.write_single_register_cb(&rsp, rsp_length, address, data, mb_mapping->tab_registers, mapping_address);
+            } else {
+                mb_mapping->tab_registers[mapping_address] = data;
+                memcpy(rsp, req, req_length);
+            }
+
             rsp_length = req_length;
 
             if (ctx->callbacks.happened_cb != NULL) {
@@ -1704,6 +1721,21 @@ int modbus_set_slave(modbus_t *ctx, int slave)
     }
 
     return ctx->backend->set_slave(ctx, slave);
+}
+
+// probably doesn't work right in tcp
+int modbus_get_slave(modbus_t *ctx) {
+    if (ctx == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (ctx->slave >= 0 && ctx->slave <= 247) {
+        return ctx->slave;
+    } else {
+        errno = EINVAL;
+        return -1;
+    }
 }
 
 int modbus_set_error_recovery(modbus_t *ctx,

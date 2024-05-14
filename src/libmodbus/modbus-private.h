@@ -103,6 +103,8 @@ typedef struct _modbus_backend {
     void (*free) (modbus_t *ctx);
 } modbus_backend_t;
 
+typedef void (*modbus_print_cb) (char c);
+
 struct _modbus {
     /* Slave address */
     int slave;
@@ -115,6 +117,7 @@ struct _modbus {
     const modbus_backend_t *backend;
     void *backend_data;
     callback_mapping_t callbacks;
+    modbus_print_cb print;
 };
 
 void _modbus_init_common(modbus_t *ctx);

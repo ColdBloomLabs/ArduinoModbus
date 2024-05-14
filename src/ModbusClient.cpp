@@ -72,6 +72,8 @@ int ModbusClient::begin(modbus_t* mb, int defaultId)
   
   setTimeout(_timeout);
 
+  modbus_set_debug(_mb, 1);
+
   return 1;
 }
 
@@ -143,6 +145,17 @@ long ModbusClient::holdingRegisterRead(int id, int address)
   }
 
   return value;
+}
+
+int ModbusClient::holdingRegisterRead(uint16_t *data, int id, int address, uint8_t nb)
+{
+    modbus_set_slave(_mb, id);
+
+    if (modbus_read_registers(_mb, address, nb, data) < 0) {
+        return -1;
+    }
+
+    return 1;
 }
 
 long ModbusClient::inputRegisterRead(int address)
@@ -414,11 +427,18 @@ const char* ModbusClient::lastError()
   return modbus_strerror(errno); 
 }
 
-void ModbusClient::setTimeout(unsigned long ms)
+void ModbusClient::setTimeout(unsigned long responseTimeoutMs)
 {
-  _timeout = ms;
+  _timeout = responseTimeoutMs;
 
   if (_mb) {
     modbus_set_response_timeout(_mb, _timeout / 1000, (_timeout % 1000) * 1000);
+  }
+}
+
+void ModbusClient::setByteTimeout(unsigned long byteTimeoutMs)
+{
+  if (_mb) {
+    modbus_set_byte_timeout(_mb, byteTimeoutMs / 1000, (byteTimeoutMs % 1000) * 1000);
   }
 }

@@ -45,11 +45,14 @@ struct win32_ser {
 };
 #endif /* _WIN32 */
 
+
 typedef struct _modbus_rtu {
 #if defined(ARDUINO)
     unsigned long baud;
     uint16_t config;
     RS485Class* rs485;
+    unsigned long last_char_recv_time;
+    uint16_t num_in_recv_buffer;
 #else
     /* Device: "/dev/ttyS0", "/dev/ttyUSB0" or "/dev/tty.USA19*" on Mac OS X. */
     char *device;
